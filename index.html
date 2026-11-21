@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ATC Diesel</title>
+<meta name="theme-color" content="#052b6b">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ATC Diesel">
+<style>
+:root{--bg:#f0f3f9;--ink:#0d1b3d;--muted:#5a6784;--line:#d3dae7;--card:#fff;--navy:#052b6b;--red:#e30e0e;--ok:#0b7a43}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+header{background:#fff;border-bottom:3px solid var(--red);padding:calc(8px + env(safe-area-inset-top,0px)) 16px 8px;text-align:center}
+header img{height:54px;max-width:100%;object-fit:contain}
+main{padding:12px 16px;max-width:560px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+label{display:block;font-size:14px;color:var(--muted);margin:12px 0 4px}
+label:first-child{margin-top:0}
+input,select{width:100%;font:inherit;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--navy);outline-offset:1px}
+.btn{width:100%;margin-top:16px;padding:14px;font:inherit;font-weight:700;border:0;border-radius:10px;background:var(--red);color:#fff;cursor:pointer}
+.btn:disabled{opacity:.6}
+.msg{margin-top:10px;font-size:14px;min-height:20px}
+.ok{color:var(--ok)}.bad{color:var(--red)}
+nav{position:fixed;bottom:0;left:0;right:0;display:grid;grid-template-columns:repeat(3,1fr);background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{padding:15px 4px;font:inherit;font-weight:600;border:0;background:none;color:var(--muted);cursor:pointer}
+nav button.on{color:var(--navy);box-shadow:inset 0 3px 0 var(--red)}
+.hide{display:none}
+.period{display:flex;gap:12px;align-items:flex-end}
+.period>div:first-child{flex:1}
+.period label.chk{display:flex;align-items:center;gap:8px;margin:0 0 14px;color:var(--ink);white-space:nowrap}
+.period label.chk input{width:20px;height:20px;padding:0}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.stats div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}
+.stats small{color:var(--muted)}.stats b{display:block;font-size:19px;color:var(--navy)}
+h2{font-size:16px;margin:0;color:var(--navy)}
+.hrow{display:flex;align-items:center;justify-content:space-between;margin:22px 0 8px}
+.dl{font:inherit;font-weight:600;font-size:14px;color:var(--navy);background:#fff;border:1px solid var(--navy);border-radius:8px;padding:8px 12px;cursor:pointer}
+.dl:disabled{opacity:.6}
+.tx{display:flex;justify-content:space-between;gap:12px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:10px;padding:12px;margin-bottom:8px}
+.tx.pay{border-left-color:var(--ok)}
+.tx .l{min-width:0}
+.tx .veh{font-size:17px;letter-spacing:.3px}
+.tx .sub{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:14px;margin-top:3px;flex-wrap:wrap}
+.tx .det{font-size:13px;color:var(--muted);margin-top:3px}
+.tx .r{text-align:right;flex:none}
+.tx .r b{display:block;font-size:17px}
+.tx .r small{color:var(--muted)}
+.pp{position:relative}
+.ppbtn{width:100%;display:flex;align-items:center;gap:10px;font:inherit;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;text-align:left}
+.ppbtn i{margin-left:auto;font-style:normal;color:var(--muted)}
+.ph{color:var(--muted)}
+.pplist{position:absolute;z-index:5;left:0;right:0;margin:4px 0 0;padding:4px;list-style:none;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 18px rgba(5,43,107,.18);max-height:280px;overflow:auto}
+.pplist li{display:flex;align-items:center;gap:10px;padding:10px;border-radius:6px;cursor:pointer}
+.pplist li:hover{background:var(--bg)}
+.bd{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex:none;object-fit:contain}
+.tx .bd{width:20px;height:20px;font-size:8px}
+</style>
+</head>
+<body>
+<header><img src="logo.png" alt="ATC Diesel"></header>
+
+<main>
+  <section id="tab-home">
+    <div class="period">
+      <div><label for="month">Month</label><input type="month" id="month"></div>
+      <label class="chk"><input type="checkbox" id="all"> All time</label>
+    </div>
+    <div class="stats">
+      <div><small>Total Diesel</small><b id="tl">–</b></div>
+      <div><small>Diesel Amount</small><b id="td">–</b></div>
+      <div><small>Payments Made</small><b id="tp">–</b></div>
+      <div><small>Outstanding Balance</small><b id="tdue">–</b></div>
+    </div>
+    <div class="hrow"><h2>Transactions</h2><button type="button" class="dl" id="dl">Download PDF</button></div>
+    <div id="list"></div>
+    <div class="msg" id="rmsg"></div>
+  </section>
+
+  <section id="tab-entry" class="hide">
+    <div class="card">
+      <label for="date">Date</label>
+      <input type="date" id="date">
+
+      <label>Pump</label>
+      <div class="pp" id="pp-d"><button type="button" class="ppbtn"></button><ul class="pplist hide"></ul></div>
+
+      <label for="vehicle">Vehicle Number</label>
+      <input id="vehicle" list="vlist" placeholder="e.g. MH12AB1234" autocapitalize="characters" autocomplete="off">
+      <datalist id="vlist"></datalist>
+
+      <label for="liters">Diesel Quantity (litres)</label>
+      <input id="liters" type="number" inputmode="decimal" step="0.01" min="0">
+
+      <label for="rate">Rate (₹ per litre)</label>
+      <input id="rate" type="number" inputmode="decimal" step="0.01" min="0">
+
+      <label for="amount">Amount (₹) – calculated automatically, can be edited</label>
+      <input id="amount" type="number" inputmode="decimal" step="0.01" min="0">
+
+      <label for="slip">Slip Number</label>
+      <input id="slip" autocomplete="off">
+
+      <button class="btn" id="save">Save Diesel Entry</button>
+      <div class="msg" id="msg" role="status"></div>
+    </div>
+  </section>
+
+  <section id="tab-pay" class="hide">
+    <div class="card">
+      <label for="pdate">Payment Date</label>
+      <input type="date" id="pdate">
+
+      <label>Pump</label>
+      <div class="pp" id="pp-p"><button type="button" class="ppbtn"></button><ul class="pplist hide"></ul></div>
+
+      <label for="pamount">Amount Paid (₹)</label>
+      <input id="pamount" type="number" inputmode="decimal" step="0.01" min="0">
+
+      <label for="pmode">Payment Mode</label>
+      <select id="pmode">
+        <option>UPI</option><option>Bank Transfer</option><option>Cash</option><option>Cheque</option>
+      </select>
+
+      <label for="pref">Reference / Cheque Number (optional)</label>
+      <input id="pref" autocomplete="off">
+
+      <button class="btn" id="psave">Save Payment</button>
+      <div class="msg" id="pmsg" role="status"></div>
+    </div>
+  </section>
+</main>
+
+<nav>
+  <button id="nav-home" class="on">Home</button>
+  <button id="nav-entry">Diesel Entry</button>
+  <button id="nav-pay">Payment</button>
+</nav>
+
+<script src="config.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const inr = n => '₹ ' + Number(n || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fd = s => { const p = String(s).split('-'); return p.length === 3 ? `${+p[2]} ${MON[+p[1] - 1]} ${p[0]}` : s; };
+
+// Pump list. To use a real logo, add img:'pumps/hp.png' to the entry and place the file in a "pumps" folder
+const PUMPS = [
+  {n:'HP', s:'HP', c:'#1b4fa0'},
+  {n:'BPCL', s:'BP', c:'#f2c200', t:'#0b3d91'},
+  {n:'Nayara', s:'N', c:'#f26a21'},
+  {n:'Indian Oil', s:'IO', c:'#f47b20'},
+  {n:'Reliance', s:'R', c:'#1d4ea1'},
+  {n:'Shell', s:'S', c:'#fbce07', t:'#c8102e'}
+];
+const badge = p => !p ? '' : p.img ? `<img class="bd" src="${p.img}" alt="">` :
+  `<span class="bd" style="background:${p.c};color:${p.t || '#fff'}">${p.s}</span>`;
+
+function picker(id) {
+  const el = $(id), btn = el.querySelector('button'), list = el.querySelector('ul');
+  let val = '';
+  list.innerHTML = PUMPS.map(p => `<li data-n="${esc(p.n)}">${badge(p)}<span>${esc(p.n)}</span></li>`).join('');
+  const paint = () => {
+    const p = PUMPS.find(x => x.n === val);
+    btn.innerHTML = (p ? badge(p) + `<span>${esc(p.n)}</span>` : '<span class="ph">Select pump</span>') + '<i>▾</i>';
+  };
+  btn.onclick = () => list.classList.toggle('hide');
+  list.onclick = e => { const li = e.target.closest('li'); if (!li) return; val = li.dataset.n; list.classList.add('hide'); paint(); };
+  paint();
+  return { get: () => val };
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.pp')) document.querySelectorAll('.pplist').forEach(l => l.classList.add('hide'));
+});
+const pd = picker('pp-d'), pp = picker('pp-p');
+
+async function api(opts) {
+  if (typeof API_URL === 'undefined' || !API_URL.startsWith('https://script.google.com/') || !API_URL.endsWith('/exec')) {
+    throw new Error('API_URL (the /exec link) is not set in config.js');
+  }
+  let res;
+  try { res = await fetch(opts.url || API_URL, opts.init); }
+  catch (e) { throw new Error('Unable to connect. Please check your internet connection.'); }
+  const j = await res.json();
+  if (j.error) throw new Error(j.error);
+  return j;
+}
+function run(fn, arg) {
+  if (fn === 'getInit') return api({ url: API_URL + '?action=init' });
+  if (fn === 'getMonthly') return api({ url: API_URL + '?action=monthly&month=' + encodeURIComponent(arg) });
+  return api({ init: { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: fn, data: arg }) } });
+}
+
+function calc() {
+  const l = Number($('liters').value), r = Number($('rate').value);
+  if (l > 0 && r > 0) $('amount').value = (Math.round(l * r * 100) / 100).toString();
+}
+['liters', 'rate'].forEach(i => $(i).addEventListener('input', calc));
+
+function show(tab) {
+  ['home', 'entry', 'pay'].forEach(t => {
+    $('tab-' + t).classList.toggle('hide', t !== tab);
+    $('nav-' + t).classList.toggle('on', t === tab);
+  });
+  window.scrollTo(0, 0);
+  if (tab === 'home') loadReport();
+}
+['home', 'entry', 'pay'].forEach(t => $('nav-' + t).onclick = () => show(t));
+
+function fillVehicles(list) { $('vlist').innerHTML = list.map(v => `<option value="${esc(v)}">`).join(''); }
+
+async function init() {
+  try {
+    const d = await run('getInit');
+    $('date').value = d.today; $('pdate').value = d.today;
+    $('month').value = d.today.substring(0, 7);
+    fillVehicles(d.vehicles);
+    try { const r = localStorage.getItem('atc_rate'); if (r) $('rate').value = r; } catch (e) {}
+    loadReport();
+  } catch (e) { $('rmsg').className = 'msg bad'; $('rmsg').textContent = e.message; }
+}
+
+async function submit(btn, msg, fn, data, label, after) {
+  btn.disabled = true; msg.className = 'msg'; msg.textContent = 'Saving…';
+  try {
+    await run(fn, data);
+    msg.className = 'msg ok'; msg.textContent = label + ' saved successfully.';
+    await after();
+  } catch (e) { msg.className = 'msg bad'; msg.textContent = e.message; }
+  btn.disabled = false;
+}
+
+$('save').onclick = () => submit($('save'), $('msg'), 'addEntry', {
+  date: $('date').value, pump: pd.get(), vehicle: $('vehicle').value,
+  liters: $('liters').value, rate: $('rate').value, amount: $('amount').value, slip: $('slip').value
+}, 'Diesel entry', async () => {
+  try { if ($('rate').value) localStorage.setItem('atc_rate', $('rate').value); } catch (e) {}
+  ['vehicle', 'liters', 'amount', 'slip'].forEach(i => $(i).value = '');
+  fillVehicles((await run('getInit')).vehicles);
+});
+
+$('psave').onclick = () => submit($('psave'), $('pmsg'), 'addPayment', {
+  date: $('pdate').value, pump: pp.get(), amount: $('pamount').value, mode: $('pmode').value, ref: $('pref').value
+}, 'Payment', async () => { $('pamount').value = ''; $('pref').value = ''; });
+
+function card(t) {
+  const p = PUMPS.find(x => x.n === t.pump);
+  const sub = `<div class="sub">${badge(p)}<span>${esc(t.pump)}</span><span>•</span><span>${fd(t.date)}</span></div>`;
+  if (t.type === 'payment') {
+    return `<div class="tx pay"><div class="l"><b class="veh">Payment</b>${sub}
+      <div class="det">${esc(t.mode)}${t.ref ? ' • Ref ' + esc(t.ref) : ''}</div></div>
+      <div class="r"><b class="ok">${inr(t.amount)}</b><small>Paid</small></div></div>`;
+  }
+  return `<div class="tx"><div class="l"><b class="veh">${esc(t.vehicle)}</b>${sub}
+    <div class="det">Slip ${esc(t.slip)}${t.rate ? ' • ₹' + t.rate + '/L' : ''}</div></div>
+    <div class="r"><b>${inr(t.amount)}</b><small>${t.liters} L</small></div></div>`;
+}
+
+let lastReport = null;
+
+const loadScript = src => new Promise((ok, fail) => {
+  const el = document.createElement('script');
+  el.src = src; el.onload = ok;
+  el.onerror = () => fail(new Error('Could not load the PDF library. Please check your internet connection.'));
+  document.head.appendChild(el);
+});
+async function pdfLibs() {
+  if (!(window.jspdf && window.jspdf.jsPDF)) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+  if (!(window.jspdf.jsPDF.API && window.jspdf.jsPDF.API.autoTable)) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js');
+}
+const imgData = src => fetch(src).then(r => r.blob())
+  .then(b => new Promise(ok => { const f = new FileReader(); f.onload = () => ok(f.result); f.readAsDataURL(b); }))
+  .then(d => new Promise(ok => { const i = new Image(); i.onload = () => ok({ d, w: i.width, h: i.height }); i.onerror = () => ok(null); i.src = d; }))
+  .catch(() => null);
+const money = n => Number(n || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+$('dl').onclick = async () => {
+  const btn = $('dl'), msg = $('rmsg');
+  if (!lastReport || !lastReport.r.entries.length) { msg.className = 'msg bad'; msg.textContent = 'There are no transactions to export.'; return; }
+  btn.disabled = true; btn.textContent = 'Preparing…';
+  try {
+    await pdfLibs();
+    const { r, label, file } = lastReport;
+    const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
+    const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
+    const NAVY = [5, 43, 107], GREEN = [11, 122, 67];
+    const logo = await imgData('logo.png');
+    if (logo) { const h = 16; doc.addImage(logo.d, 'PNG', 14, 10, h * logo.w / logo.h, h); }
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.setTextColor(...NAVY);
+    doc.text('Transactions Report', W - 14, 17, { align: 'right' });
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(90, 103, 132);
+    doc.text('Period: ' + label, W - 14, 22, { align: 'right' });
+    doc.text('Generated on ' + new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }), W - 14, 26.5, { align: 'right' });
+
+    doc.autoTable({
+      startY: 31, theme: 'grid', margin: { left: 14, right: 14 },
+      head: [['Total Diesel', 'Diesel Amount', 'Payments Made', 'Outstanding Balance']],
+      body: [[r.totalLiters.toLocaleString('en-IN') + ' L', 'Rs. ' + money(r.totalAmount), 'Rs. ' + money(r.totalPaid), 'Rs. ' + money(r.totalDue)]],
+      styles: { fontSize: 9, halign: 'center' },
+      headStyles: { fillColor: NAVY }
+    });
+
+    const rows = [...r.entries].reverse().map(t => t.type === 'payment'
+      ? [fd(t.date), 'Payment (' + t.mode + ')', '-', t.pump, t.ref || '-', '-', '-', money(t.amount)]
+      : [fd(t.date), 'Diesel', t.vehicle, t.pump, t.slip, t.liters, t.rate ? money(t.rate) : '-', money(t.amount)]);
+    doc.autoTable({
+      startY: doc.lastAutoTable.finalY + 8, margin: { left: 14, right: 14 }, theme: 'striped',
+      head: [['Date', 'Type', 'Vehicle', 'Pump', 'Slip / Ref', 'Litres', 'Rate', 'Amount (Rs.)']],
+      body: rows,
+      styles: { fontSize: 8, cellPadding: 1.8 },
+      headStyles: { fillColor: NAVY },
+      columnStyles: { 5: { halign: 'right' }, 6: { halign: 'right' }, 7: { halign: 'right' } },
+      didParseCell: d => { if (d.section === 'body' && String(d.row.raw[1]).startsWith('Payment')) d.cell.styles.textColor = GREEN; }
+    });
+
+    const pages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pages; i++) {
+      doc.setPage(i); doc.setFontSize(8); doc.setTextColor(120);
+      doc.text(`ATC Diesel  |  Page ${i} of ${pages}`, W / 2, H - 8, { align: 'center' });
+    }
+    doc.save(file);
+    msg.textContent = '';
+  } catch (e) { msg.className = 'msg bad'; msg.textContent = e.message; }
+  btn.disabled = false; btn.textContent = 'Download PDF';
+};
+
+async function loadReport() {
+  const all = $('all').checked;
+  $('month').disabled = all;
+  const m = all ? 'all' : $('month').value; if (!m) return;
+  const msg = $('rmsg'); msg.className = 'msg'; msg.textContent = 'Loading…';
+  try {
+    const r = await run('getMonthly', m);
+    $('tl').textContent = r.totalLiters.toLocaleString('en-IN') + ' L';
+    $('td').textContent = inr(r.totalAmount);
+    $('tp').textContent = inr(r.totalPaid);
+    $('tdue').textContent = inr(r.totalDue);
+    lastReport = { r, file: 'ATC-Diesel-' + (all ? 'All-time' : m) + '.pdf',
+      label: all ? 'All time' : MON[+m.slice(5) - 1] + ' ' + m.slice(0, 4) };
+    $('list').innerHTML = r.entries.slice(0, 300).map(card).join('');
+    if (r.entries.length > 300) msg.textContent = `Showing the latest 300 of ${r.entries.length} transactions. The PDF includes all of them.`;
+    else if (r.entries.length) msg.textContent = '';
+    else if (r.count.diesel + r.count.payments > 0 && !all)
+      msg.textContent = `No transactions in this month. The sheet has ${r.count.diesel} diesel and ${r.count.payments} payment records in other months. Tick “All time” to view them.`;
+    else msg.textContent = 'No transactions found.';
+  } catch (e) { msg.className = 'msg bad'; msg.textContent = e.message; }
+}
+$('month').addEventListener('change', loadReport);
+$('all').addEventListener('change', loadReport);
+init();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
