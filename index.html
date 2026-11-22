@@ -30,7 +30,7 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--navy);outl
 nav{position:fixed;bottom:0;left:0;right:0;display:grid;grid-template-columns:repeat(3,1fr);background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
 nav button{padding:15px 4px;font:inherit;font-weight:600;border:0;background:none;color:var(--muted);cursor:pointer}
 nav button.on{color:var(--navy);box-shadow:inset 0 3px 0 var(--red)}
-.hide{display:none}
+.hide{display:none!important}
 .period{display:flex;gap:12px;align-items:flex-end}
 .period>div:first-child{flex:1}
 .period label.chk{display:flex;align-items:center;gap:8px;margin:0 0 14px;color:var(--ink);white-space:nowrap}
@@ -42,7 +42,7 @@ h2{font-size:16px;margin:0;color:var(--navy)}
 .hrow{display:flex;align-items:center;justify-content:space-between;margin:22px 0 8px}
 .dl{font:inherit;font-weight:600;font-size:14px;color:var(--navy);background:#fff;border:1px solid var(--navy);border-radius:8px;padding:8px 12px;cursor:pointer}
 .dl:disabled{opacity:.6}
-.tx{display:flex;justify-content:space-between;gap:12px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:10px;padding:12px;margin-bottom:8px}
+.tx{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 12px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:10px;padding:12px;margin-bottom:8px}
 .tx.pay{border-left-color:var(--ok)}
 .tx .l{min-width:0}
 .tx .veh{font-size:17px;letter-spacing:.3px}
@@ -51,6 +51,19 @@ h2{font-size:16px;margin:0;color:var(--navy)}
 .tx .r{text-align:right;flex:none}
 .tx .r b{display:block;font-size:17px}
 .tx .r small{color:var(--muted)}
+.tx .bal{flex:0 0 100%;display:flex;justify-content:space-between;align-items:baseline;border-top:1px dashed var(--line);padding-top:8px;font-size:14px;color:var(--muted)}
+.tx .bal b{color:var(--navy);font-size:15px}
+.tx .bal b.ok{color:var(--ok)}
+.modal{position:fixed;inset:0;z-index:20;background:rgba(5,20,50,.5);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:#fff;width:100%;max-width:560px;border-radius:14px 14px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.sheet h2{margin-bottom:12px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--navy);border-radius:8px;overflow:hidden;margin-bottom:12px}
+.seg button{font:inherit;font-weight:600;font-size:14px;padding:10px 4px;border:0;background:#fff;color:var(--navy);cursor:pointer}
+.seg button.on{background:var(--navy);color:#fff}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn.ghost{background:#fff;color:var(--navy);border:1px solid var(--line);margin-top:8px}
+.ed{font:inherit;font-weight:600;font-size:13px;color:var(--navy);background:#fff;border:1px solid var(--navy);border-radius:7px;padding:5px 14px;cursor:pointer}
+.sheet{max-height:92vh;overflow:auto}
 .pp{position:relative}
 .ppbtn{width:100%;display:flex;align-items:center;gap:10px;font:inherit;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;text-align:left}
 .ppbtn i{margin-left:auto;font-style:normal;color:var(--muted)}
@@ -136,6 +149,62 @@ h2{font-size:16px;margin:0;color:var(--navy)}
   </section>
 </main>
 
+<div class="modal hide" id="pdfm" role="dialog" aria-modal="true" aria-labelledby="pdft">
+  <div class="sheet">
+    <h2 id="pdft">Download PDF</h2>
+    <div class="seg" id="mode">
+      <button type="button" data-m="month">Month</button>
+      <button type="button" data-m="custom">Custom Dates</button>
+      <button type="button" data-m="all">All Time</button>
+    </div>
+    <div id="m-month"><label for="pm">Month</label><input type="month" id="pm"></div>
+    <div id="m-custom" class="two hide">
+      <div><label for="pf">From</label><input type="date" id="pf"></div>
+      <div><label for="pt">To</label><input type="date" id="pt"></div>
+    </div>
+    <div class="msg" id="dmsg" role="status"></div>
+    <button class="btn" id="dgo" type="button">Download PDF</button>
+    <button class="btn ghost" id="dx" type="button">Cancel</button>
+  </div>
+</div>
+
+<div class="modal hide" id="edm" role="dialog" aria-modal="true" aria-labelledby="edt">
+  <div class="sheet">
+    <h2 id="edt">Edit Entry</h2>
+    <div id="e-diesel">
+      <label for="e-date">Date</label>
+      <input type="date" id="e-date">
+      <label>Pump</label>
+      <div class="pp" id="pp-ed"><button type="button" class="ppbtn"></button><ul class="pplist hide"></ul></div>
+      <label for="e-vehicle">Vehicle Number</label>
+      <input id="e-vehicle" list="vlist" autocapitalize="characters" autocomplete="off">
+      <label for="e-liters">Diesel Quantity (litres)</label>
+      <input id="e-liters" type="number" inputmode="decimal" step="0.01" min="0">
+      <label for="e-rate">Rate (₹ per litre)</label>
+      <input id="e-rate" type="number" inputmode="decimal" step="0.01" min="0">
+      <label for="e-amount">Amount (₹)</label>
+      <input id="e-amount" type="number" inputmode="decimal" step="0.01" min="0">
+      <label for="e-slip">Slip Number</label>
+      <input id="e-slip" autocomplete="off">
+    </div>
+    <div id="e-pay" class="hide">
+      <label for="e-pdate">Payment Date</label>
+      <input type="date" id="e-pdate">
+      <label>Pump</label>
+      <div class="pp" id="pp-ep"><button type="button" class="ppbtn"></button><ul class="pplist hide"></ul></div>
+      <label for="e-pamount">Amount Paid (₹)</label>
+      <input id="e-pamount" type="number" inputmode="decimal" step="0.01" min="0">
+      <label for="e-pmode">Payment Mode</label>
+      <select id="e-pmode"><option>UPI</option><option>Bank Transfer</option><option>Cash</option><option>Cheque</option></select>
+      <label for="e-pref">Reference / Cheque Number (optional)</label>
+      <input id="e-pref" autocomplete="off">
+    </div>
+    <div class="msg" id="emsg" role="status"></div>
+    <button class="btn" id="esave" type="button">Save Changes</button>
+    <button class="btn ghost" id="ex" type="button">Cancel</button>
+  </div>
+</div>
+
 <nav>
   <button id="nav-home" class="on">Home</button>
   <button id="nav-entry">Diesel Entry</button>
@@ -168,17 +237,17 @@ function picker(id) {
   list.innerHTML = PUMPS.map(p => `<li data-n="${esc(p.n)}">${badge(p)}<span>${esc(p.n)}</span></li>`).join('');
   const paint = () => {
     const p = PUMPS.find(x => x.n === val);
-    btn.innerHTML = (p ? badge(p) + `<span>${esc(p.n)}</span>` : '<span class="ph">Select pump</span>') + '<i>▾</i>';
+    btn.innerHTML = (p ? badge(p) + `<span>${esc(p.n)}</span>` : val ? `<span>${esc(val)}</span>` : '<span class="ph">Select pump</span>') + '<i>▾</i>';
   };
   btn.onclick = () => list.classList.toggle('hide');
   list.onclick = e => { const li = e.target.closest('li'); if (!li) return; val = li.dataset.n; list.classList.add('hide'); paint(); };
   paint();
-  return { get: () => val };
+  return { get: () => val, set: v => { val = v === '—' ? '' : (v || ''); paint(); } };
 }
 document.addEventListener('click', e => {
   if (!e.target.closest('.pp')) document.querySelectorAll('.pplist').forEach(l => l.classList.add('hide'));
 });
-const pd = picker('pp-d'), pp = picker('pp-p');
+const pd = picker('pp-d'), pp = picker('pp-p'), ped = picker('pp-ed'), pep = picker('pp-ep');
 
 async function api(opts) {
   if (typeof API_URL === 'undefined' || !API_URL.startsWith('https://script.google.com/') || !API_URL.endsWith('/exec')) {
@@ -193,6 +262,7 @@ async function api(opts) {
 }
 function run(fn, arg) {
   if (fn === 'getInit') return api({ url: API_URL + '?action=init' });
+  if (fn === 'getReport') return api({ url: API_URL + '?action=report&from=' + encodeURIComponent(arg.from) + '&to=' + encodeURIComponent(arg.to) });
   if (fn === 'getMonthly') return api({ url: API_URL + '?action=monthly&month=' + encodeURIComponent(arg) });
   return api({ init: { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({ action: fn, data: arg }) } });
@@ -216,9 +286,11 @@ function show(tab) {
 
 function fillVehicles(list) { $('vlist').innerHTML = list.map(v => `<option value="${esc(v)}">`).join(''); }
 
+let TODAY = '';
 async function init() {
   try {
     const d = await run('getInit');
+    TODAY = d.today;
     $('date').value = d.today; $('pdate').value = d.today;
     $('month').value = d.today.substring(0, 7);
     fillVehicles(d.vehicles);
@@ -250,20 +322,19 @@ $('psave').onclick = () => submit($('psave'), $('pmsg'), 'addPayment', {
   date: $('pdate').value, pump: pp.get(), amount: $('pamount').value, mode: $('pmode').value, ref: $('pref').value
 }, 'Payment', async () => { $('pamount').value = ''; $('pref').value = ''; });
 
-function card(t) {
+function card(t, i) {
   const p = PUMPS.find(x => x.n === t.pump);
+  const bal = `<div class="bal"><span>Outstanding <b class="${t.balance < 0 ? 'ok' : ''}">${inr(t.balance)}</b></span><button type="button" class="ed" data-i="${i}">Edit</button></div>`;
   const sub = `<div class="sub">${badge(p)}<span>${esc(t.pump)}</span><span>•</span><span>${fd(t.date)}</span></div>`;
   if (t.type === 'payment') {
     return `<div class="tx pay"><div class="l"><b class="veh">Payment</b>${sub}
       <div class="det">${esc(t.mode)}${t.ref ? ' • Ref ' + esc(t.ref) : ''}</div></div>
-      <div class="r"><b class="ok">${inr(t.amount)}</b><small>Paid</small></div></div>`;
+      <div class="r"><b class="ok">${inr(t.amount)}</b><small>Paid</small></div>${bal}</div>`;
   }
   return `<div class="tx"><div class="l"><b class="veh">${esc(t.vehicle)}</b>${sub}
     <div class="det">Slip ${esc(t.slip)}${t.rate ? ' • ₹' + t.rate + '/L' : ''}</div></div>
-    <div class="r"><b>${inr(t.amount)}</b><small>${t.liters} L</small></div></div>`;
+    <div class="r"><b>${inr(t.amount)}</b><small>${t.liters} L</small></div>${bal}</div>`;
 }
-
-let lastReport = null;
 
 const loadScript = src => new Promise((ok, fail) => {
   const el = document.createElement('script');
@@ -280,15 +351,47 @@ const imgData = src => fetch(src).then(r => r.blob())
   .then(d => new Promise(ok => { const i = new Image(); i.onload = () => ok({ d, w: i.width, h: i.height }); i.onerror = () => ok(null); i.src = d; }))
   .catch(() => null);
 const money = n => Number(n || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const monLabel = m => MON[+m.slice(5) - 1] + ' ' + m.slice(0, 4);
+const todayStr = () => TODAY || new Date().toISOString().slice(0, 10);
 
-$('dl').onclick = async () => {
-  const btn = $('dl'), msg = $('rmsg');
-  if (!lastReport || !lastReport.r.entries.length) { msg.className = 'msg bad'; msg.textContent = 'There are no transactions to export.'; return; }
-  btn.disabled = true; btn.textContent = 'Preparing…';
+// ---- PDF filter (month / custom dates / all time) ----
+let pmode = 'month';
+function setMode(m) {
+  pmode = m;
+  document.querySelectorAll('#mode button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
+  $('m-month').classList.toggle('hide', m !== 'month');
+  $('m-custom').classList.toggle('hide', m !== 'custom');
+}
+document.querySelectorAll('#mode button').forEach(b => b.onclick = () => setMode(b.dataset.m));
+const closeModal = () => $('pdfm').classList.add('hide');
+$('dx').onclick = closeModal;
+$('pdfm').onclick = e => { if (e.target === $('pdfm')) closeModal(); };
+$('dl').onclick = () => {
+  const m = $('month').value || todayStr().slice(0, 7);
+  $('pm').value = m; $('pf').value = m + '-01'; $('pt').value = todayStr();
+  setMode($('all').checked ? 'all' : 'month');
+  $('dmsg').className = 'msg'; $('dmsg').textContent = '';
+  $('pdfm').classList.remove('hide');
+};
+
+$('dgo').onclick = async () => {
+  const btn = $('dgo'), msg = $('dmsg');
+  const fail = t => { msg.className = 'msg bad'; msg.textContent = t; };
+  let from = '', to = '', label = 'All time', file = 'ATC-Diesel-All-time.pdf';
+  if (pmode === 'month') {
+    const m = $('pm').value; if (!m) return fail('Please select a month.');
+    from = m + '-01'; to = m + '-31'; label = monLabel(m); file = `ATC-Diesel-${m}.pdf`;
+  } else if (pmode === 'custom') {
+    const f = $('pf').value, t = $('pt').value;
+    if (!f || !t) return fail('Please select both From and To dates.');
+    if (f > t) return fail('The From date must be on or before the To date.');
+    from = f; to = t; label = `${fd(f)} to ${fd(t)}`; file = `ATC-Diesel-${f}_to_${t}.pdf`;
+  }
+  btn.disabled = true; btn.textContent = 'Preparing…'; msg.className = 'msg'; msg.textContent = '';
   try {
-    await pdfLibs();
-    const { r, label, file } = lastReport;
-    const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
+    const [r] = await Promise.all([run('getReport', { from, to }), pdfLibs()]);
+    if (!r.entries.length) throw new Error('No transactions found for the selected period.');
+    const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
     const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
     const NAVY = [5, 43, 107], GREEN = [11, 122, 67];
     const logo = await imgData('logo.png');
@@ -301,23 +404,30 @@ $('dl').onclick = async () => {
 
     doc.autoTable({
       startY: 31, theme: 'grid', margin: { left: 14, right: 14 },
-      head: [['Total Diesel', 'Diesel Amount', 'Payments Made', 'Outstanding Balance']],
-      body: [[r.totalLiters.toLocaleString('en-IN') + ' L', 'Rs. ' + money(r.totalAmount), 'Rs. ' + money(r.totalPaid), 'Rs. ' + money(r.totalDue)]],
-      styles: { fontSize: 9, halign: 'center' },
-      headStyles: { fillColor: NAVY }
+      head: [['Total Diesel', 'Diesel Amount', 'Payments Made', 'Opening Balance', 'Closing Balance']],
+      body: [[r.totalLiters.toLocaleString('en-IN') + ' L', 'Rs. ' + money(r.totalAmount), 'Rs. ' + money(r.totalPaid), 'Rs. ' + money(r.opening), 'Rs. ' + money(r.closing)]],
+      styles: { fontSize: 9, halign: 'center' }, headStyles: { fillColor: NAVY }
     });
 
-    const rows = [...r.entries].reverse().map(t => t.type === 'payment'
-      ? [fd(t.date), 'Payment (' + t.mode + ')', '-', t.pump, t.ref || '-', '-', '-', money(t.amount)]
-      : [fd(t.date), 'Diesel', t.vehicle, t.pump, t.slip, t.liters, t.rate ? money(t.rate) : '-', money(t.amount)]);
+    const blank = ['', '', '', '', '', '', ''];
+    const rows = [['', 'Opening Balance', ...blank.slice(0, 6), money(r.opening)]]
+      .concat([...r.entries].reverse().map(t => t.type === 'payment'
+        ? [fd(t.date), 'Payment (' + t.mode + ')', '-', t.pump, t.ref || '-', '-', '-', money(t.amount), money(t.balance)]
+        : [fd(t.date), 'Diesel', t.vehicle, t.pump, t.slip, t.liters, t.rate ? money(t.rate) : '-', money(t.amount), money(t.balance)]))
+      .concat([['', 'Closing Balance', ...blank.slice(0, 6), money(r.closing)]]);
     doc.autoTable({
       startY: doc.lastAutoTable.finalY + 8, margin: { left: 14, right: 14 }, theme: 'striped',
-      head: [['Date', 'Type', 'Vehicle', 'Pump', 'Slip / Ref', 'Litres', 'Rate', 'Amount (Rs.)']],
+      head: [['Date', 'Type', 'Vehicle', 'Pump', 'Slip / Ref', 'Litres', 'Rate', 'Amount (Rs.)', 'Outstanding (Rs.)']],
       body: rows,
-      styles: { fontSize: 8, cellPadding: 1.8 },
+      styles: { fontSize: 8.5, cellPadding: 2 },
       headStyles: { fillColor: NAVY },
-      columnStyles: { 5: { halign: 'right' }, 6: { halign: 'right' }, 7: { halign: 'right' } },
-      didParseCell: d => { if (d.section === 'body' && String(d.row.raw[1]).startsWith('Payment')) d.cell.styles.textColor = GREEN; }
+      columnStyles: { 5: { halign: 'right' }, 6: { halign: 'right' }, 7: { halign: 'right' }, 8: { halign: 'right', fontStyle: 'bold' } },
+      didParseCell: d => {
+        if (d.section !== 'body') return;
+        const kind = String(d.row.raw[1]);
+        if (kind.endsWith('Balance')) { d.cell.styles.fontStyle = 'bold'; d.cell.styles.fillColor = [226, 232, 244]; }
+        else if (kind.startsWith('Payment')) d.cell.styles.textColor = GREEN;
+      }
     });
 
     const pages = doc.internal.getNumberOfPages();
@@ -326,25 +436,71 @@ $('dl').onclick = async () => {
       doc.text(`ATC Diesel  |  Page ${i} of ${pages}`, W / 2, H - 8, { align: 'center' });
     }
     doc.save(file);
-    msg.textContent = '';
-  } catch (e) { msg.className = 'msg bad'; msg.textContent = e.message; }
+    closeModal();
+  } catch (e) { fail(e.message); }
   btn.disabled = false; btn.textContent = 'Download PDF';
+};
+
+// ---- Edit existing entry ----
+let CUR = [], EDIT = null;
+$('list').addEventListener('click', e => {
+  const b = e.target.closest('.ed'); if (b) openEdit(CUR[+b.dataset.i]);
+});
+const closeEdit = () => $('edm').classList.add('hide');
+$('ex').onclick = closeEdit;
+$('edm').onclick = e => { if (e.target === $('edm')) closeEdit(); };
+['e-liters', 'e-rate'].forEach(i => $(i).addEventListener('input', () => {
+  const l = Number($('e-liters').value), r = Number($('e-rate').value);
+  if (l > 0 && r > 0) $('e-amount').value = (Math.round(l * r * 100) / 100).toString();
+}));
+function openEdit(t) {
+  if (!t) return;
+  EDIT = t;
+  const d = t.type === 'diesel';
+  $('emsg').className = 'msg'; $('emsg').textContent = '';
+  $('e-diesel').classList.toggle('hide', !d);
+  $('e-pay').classList.toggle('hide', d);
+  $('edt').textContent = d ? 'Edit Diesel Entry' : 'Edit Payment';
+  if (d) {
+    $('e-date').value = t.date; ped.set(t.pump); $('e-vehicle').value = t.vehicle;
+    $('e-liters').value = t.liters; $('e-rate').value = t.rate || ''; $('e-amount').value = t.amount; $('e-slip').value = t.slip;
+  } else {
+    const sel = $('e-pmode');
+    if (![...sel.options].some(o => o.value === t.mode)) sel.add(new Option(t.mode));
+    $('e-pdate').value = t.date; pep.set(t.pump); $('e-pamount').value = t.amount; sel.value = t.mode; $('e-pref').value = t.ref;
+  }
+  $('edm').classList.remove('hide');
+}
+$('esave').onclick = async () => {
+  const btn = $('esave'), msg = $('emsg'), t = EDIT, d = t.type === 'diesel';
+  const base = { row: t.row, ts: t.ts };
+  const data = d ? { ...base, date: $('e-date').value, pump: ped.get(), vehicle: $('e-vehicle').value,
+      liters: $('e-liters').value, rate: $('e-rate').value, amount: $('e-amount').value, slip: $('e-slip').value }
+    : { ...base, date: $('e-pdate').value, pump: pep.get(), amount: $('e-pamount').value, mode: $('e-pmode').value, ref: $('e-pref').value };
+  btn.disabled = true; msg.className = 'msg'; msg.textContent = 'Saving…';
+  try {
+    await run(d ? 'updateEntry' : 'updatePayment', data);
+    closeEdit();
+    run('getInit').then(x => fillVehicles(x.vehicles)).catch(() => {});
+    await loadReport();
+    $('rmsg').className = 'msg ok'; $('rmsg').textContent = 'Entry updated successfully.';
+  } catch (e) { msg.className = 'msg bad'; msg.textContent = e.message; }
+  btn.disabled = false;
 };
 
 async function loadReport() {
   const all = $('all').checked;
   $('month').disabled = all;
-  const m = all ? 'all' : $('month').value; if (!m) return;
+  const m = $('month').value; if (!all && !m) return;
   const msg = $('rmsg'); msg.className = 'msg'; msg.textContent = 'Loading…';
   try {
-    const r = await run('getMonthly', m);
+    const r = await run('getReport', all ? { from: '', to: '' } : { from: m + '-01', to: m + '-31' });
     $('tl').textContent = r.totalLiters.toLocaleString('en-IN') + ' L';
     $('td').textContent = inr(r.totalAmount);
     $('tp').textContent = inr(r.totalPaid);
-    $('tdue').textContent = inr(r.totalDue);
-    lastReport = { r, file: 'ATC-Diesel-' + (all ? 'All-time' : m) + '.pdf',
-      label: all ? 'All time' : MON[+m.slice(5) - 1] + ' ' + m.slice(0, 4) };
-    $('list').innerHTML = r.entries.slice(0, 300).map(card).join('');
+    $('tdue').textContent = inr(r.closing);
+    CUR = r.entries.slice(0, 300);
+    $('list').innerHTML = CUR.map(card).join('');
     if (r.entries.length > 300) msg.textContent = `Showing the latest 300 of ${r.entries.length} transactions. The PDF includes all of them.`;
     else if (r.entries.length) msg.textContent = '';
     else if (r.count.diesel + r.count.payments > 0 && !all)

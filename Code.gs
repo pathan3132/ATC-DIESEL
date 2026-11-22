@@ -12,6 +12,7 @@ function doGet(e) {
   try {
     const p = (e && e.parameter) || {};
     if (p.action === 'init') return json_(getInit());
+    if (p.action === 'report') return json_(getReport(String(p.from || ''), String(p.to || '')));
     if (p.action === 'monthly') return json_(getMonthly(String(p.month || '')));
     return json_({ ok: true, app: 'ATC Diesel API' });
   } catch (err) { return json_({ error: String(err.message || err) }); }
@@ -22,6 +23,8 @@ function doPost(e) {
     const b = JSON.parse(e.postData.contents);
     if (b.action === 'addEntry') return json_(addEntry(b.data));
     if (b.action === 'addPayment') return json_(addPayment(b.data));
+    if (b.action === 'updateEntry') return json_(updateEntry(b.data));
+    if (b.action === 'updatePayment') return json_(updatePayment(b.data));
     return json_({ error: 'Unknown action' });
   } catch (err) { return json_({ error: String(err.message || err) }); }
 }
@@ -103,40 +106,85 @@ function addPayment(d) {
   return { ok: true };
 }
 
-// month = 'YYYY-MM' ya 'all'
+// Purani entry badalna: row number + original timestamp match hona zaroori (galat row na badle)
+function updateRow_(name, row, ts, values, textCols) {
+  row = Number(row);
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const sh = setup_().getSheetByName(name);
+    if (!(row >= 2 && row <= sh.getLastRow())) throw new Error('Entry not found. Please refresh and try again.');
+    if ((+new Date(sh.getRange(row, 1).getValue()) || 0) !== Number(ts)) {
+      throw new Error('This entry was changed or moved. Please refresh and try again.');
+    }
+    textCols.forEach(col => sh.getRange(row, col).setNumberFormat('@'));
+    sh.getRange(row, 2, 1, values.length).setValues([values]);
+  } finally {
+    lock.releaseLock();
+  }
+  return { ok: true };
+}
+
+function updateEntry(d) {
+  const liters = num_(d.liters), amount = num_(d.amount), slip = String(d.slip || '').trim();
+  if (!d.date || !d.vehicle || !d.pump || !(liters > 0) || !(amount > 0) || !slip) {
+    throw new Error('Please fill pump, vehicle, litres, amount and slip number');
+  }
+  const vehicle = addVehicle_(d.vehicle);
+  return updateRow_(ENTRIES, d.row, d.ts,
+    [String(d.date), vehicle, liters, num_(d.rate) || '', amount, slip, String(d.pump)], [2, 7]);
+}
+
+function updatePayment(d) {
+  const amount = num_(d.amount);
+  if (!d.date || !d.pump || !(amount > 0) || !d.mode) throw new Error('Please fill pump, amount and payment mode');
+  return updateRow_(PAYMENTS, d.row, d.ts,
+    [String(d.date), String(d.pump), amount, String(d.mode), String(d.ref || '').trim()], [2, 6]);
+}
+
 function getMonthly(month) {
+  return month === 'all' ? getReport('', '') : getReport(month + '-01', month + '-31');
+}
+
+// from / to = 'YYYY-MM-DD' (khali ho to koi seema nahi)
+// Har transaction ke saath uske baad ka running outstanding (balance) jaata hai
+function getReport(from, to) {
   const ss = setup_(), tz = ss.getSpreadsheetTimeZone();
-  const all = month === 'all';
-  const due = {}, list = [];
-  let tL = 0, tA = 0, tP = 0, nE = 0, nP = 0;
   const key = n => String(n || '').trim() || '—';
+  const tx = [];
+  let nE = 0, nP = 0;
 
-  rows_(ss.getSheetByName(ENTRIES), E_HEAD.length).forEach(r => {
+  rows_(ss.getSheetByName(ENTRIES), E_HEAD.length).forEach((r, i) => {
     nE++;
-    const d = dstr_(r[1], tz), a = num_(r[5]), p = key(r[7]);
-    due[p] = (due[p] || 0) + a;
-    if (!all && d.substring(0, 7) !== month) return;
-    const l = num_(r[3]);
-    tL += l; tA += a;
-    list.push({ type: 'diesel', ts: +new Date(r[0]) || 0, date: d, vehicle: String(r[2]), pump: p,
-      slip: String(r[6]), liters: l, rate: num_(r[4]), amount: a });
+    const a = num_(r[5]);
+    tx.push({ type: 'diesel', row: i + 2, ts: +new Date(r[0]) || 0, date: dstr_(r[1], tz), vehicle: String(r[2]), pump: key(r[7]),
+      slip: String(r[6]), liters: num_(r[3]), rate: num_(r[4]), amount: a, delta: a });
   });
-
-  rows_(ss.getSheetByName(PAYMENTS), P_HEAD.length).forEach(r => {
+  rows_(ss.getSheetByName(PAYMENTS), P_HEAD.length).forEach((r, i) => {
     nP++;
-    const d = dstr_(r[1], tz), a = num_(r[3]), p = key(r[2]);
-    due[p] = (due[p] || 0) - a;
-    if (!all && d.substring(0, 7) !== month) return;
-    tP += a;
-    list.push({ type: 'payment', ts: +new Date(r[0]) || 0, date: d, pump: p, mode: String(r[4]),
-      ref: String(r[5]), amount: a });
+    const a = num_(r[3]);
+    tx.push({ type: 'payment', row: i + 2, ts: +new Date(r[0]) || 0, date: dstr_(r[1], tz), pump: key(r[2]),
+      mode: String(r[4]), ref: String(r[5]), amount: a, delta: -a });
+  });
+  tx.sort((x, y) => x.date.localeCompare(y.date) || x.ts - y.ts);
+
+  let bal = 0, opening = 0, closing = 0, tL = 0, tA = 0, tP = 0;
+  const list = [];
+  tx.forEach(t => {
+    bal += t.delta;
+    if (from && t.date < from) opening = bal;
+    if (!to || t.date <= to) closing = bal;
+    if ((from && t.date < from) || (to && t.date > to)) return;
+    if (t.type === 'diesel') { tL += t.liters; tA += t.amount; } else { tP += t.amount; }
+    t.balance = rnd_(bal);
+    delete t.delta;
+    list.push(t);
   });
 
-  list.sort((x, y) => y.date.localeCompare(x.date) || y.ts - x.ts);
   return {
     totalLiters: rnd_(tL), totalAmount: rnd_(tA), totalPaid: rnd_(tP),
-    totalDue: rnd_(Object.keys(due).reduce((s, k) => s + due[k], 0)),
+    opening: rnd_(opening), closing: rnd_(closing), totalDue: rnd_(closing),
     count: { diesel: nE, payments: nP },
-    entries: list
+    entries: list.reverse()   // nayi entry sabse upar
   };
 }
